@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { NextIntlClientProvider } from 'next-intl';
 import { notFound } from 'next/navigation';
-import { setRequestLocale } from 'next-intl/server';
+import { setRequestLocale, getMessages } from 'next-intl/server';
 import { Inter } from 'next/font/google';
 import { dir, locales, defaultLocale, type Locale } from '@/i18n/config';
 import { Navbar } from '@/components/layout/navbar';
@@ -28,11 +28,12 @@ export default async function LocaleLayout({ children, params }: Props) {
   if (!locales.includes(locale as Locale)) notFound();
   setRequestLocale(locale);
   const direction = dir(locale as Locale) ?? dir(defaultLocale);
+  const messages = await getMessages();
 
   return (
     <html lang={locale} dir={direction} className={inter.variable} suppressHydrationWarning>
       <body className="min-h-dvh bg-background font-sans text-foreground antialiased">
-        <NextIntlClientProvider>
+        <NextIntlClientProvider messages={messages}>
           <div className="flex min-h-dvh flex-col">
             <Navbar />
             <main className="flex-1">{children}</main>
