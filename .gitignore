@@ -1,0 +1,41 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# next
+.next/
+out/
+build/
+next-env.d.ts
+
+# env
+.env
+.env.local
+.env*.local
+
+# python
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# testing
+coverage/
+
+# misc
+.DS_Store
+*.tsbuildinfo
+*.log
+npm-debug.log*
+.idea/
+.vscode/
+
+# drizzle
+drizzle/meta/
+
+# temp media
+tmp/
+uploads/
+outputs/
+.claude/

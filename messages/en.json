@@ -1,0 +1,245 @@
+{
+  "meta": {
+    "title": "Pakino | AI Watermark Removal",
+    "description": "Fast, automatic removal of AI watermarks from images and videos.",
+    "ogTitle": "Pakino | AI Watermark Removal",
+    "ogDescription": "Remove watermarks from your AI-generated images and videos with automatic processing."
+  },
+  "nav": {
+    "remove": "Remove Watermark",
+    "pricing": "Pricing",
+    "faq": "FAQ",
+    "login": "Log in",
+    "startFree": "Start free",
+    "dashboard": "Dashboard"
+  },
+  "language": {
+    "fa": "فارسی",
+    "en": "English",
+    "switch": "Switch language"
+  },
+  "common": {
+    "comingSoon": "Coming soon",
+    "loading": "Loading...",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "download": "Download",
+    "view": "View",
+    "retry": "Retry",
+    "processNew": "Process new file",
+    "back": "Back",
+    "confirm": "Confirm",
+    "newFile": "New file",
+    "credits": "credits"
+  },
+  "hero": {
+    "title": "Remove watermarks, simple and fast.",
+    "subtitle": "Remove watermarks from your images and videos with automatic processing.",
+    "ctaPrimary": "Start free",
+    "ctaSecondary": "How it works"
+  },
+  "upload": {
+    "idleTitle": "Is your file ready?",
+    "idlePrompt": "Drop your image or video here",
+    "idlePrompt2": "or click to select a file",
+    "selectFile": "Select file",
+    "dragging": "Drop the file",
+    "startProcess": "Start processing",
+    "cancelUpload": "Cancel upload",
+    "removeFile": "Remove file",
+    "uploading": "Uploading...",
+    "unsupported": "File format not supported",
+    "tooLarge": "File exceeds the size limit",
+    "empty": "No file selected",
+    "supportedImages": "Images: PNG, JPG, WEBP",
+    "supportedVideos": "Videos: MP4, MOV, WEBM",
+    "maxImage": "Max image size",
+    "maxVideo": "Max video size"
+  },
+  "stages": {
+    "UPLOADING": "Uploading...",
+    "ANALYZING": "Analyzing file...",
+    "DETECTING": "Detecting watermark...",
+    "PROCESSING": "Removing watermark...",
+    "ENCODING": "Preparing output...",
+    "COMPLETED": "Processing complete.",
+    "FAILED": "Processing failed.",
+    "CANCELLED": "Processing cancelled."
+  },
+  "features": {
+    "title": "Why Pakino?",
+    "auto": "Automatic processing",
+    "autoDesc": "Detect and remove watermarks without manual setup.",
+    "imageVideo": "Image and video support",
+    "imageVideoDesc": "Works for both photos and videos.",
+    "detect": "Watermark detection",
+    "detectDesc": "Automatic detection of watermark type and location.",
+    "private": "Private processing",
+    "privateDesc": "Files are automatically deleted after a set period.",
+    "quality": "High-quality output",
+    "qualityDesc": "Preserves original file quality after processing.",
+    "fast": "Fast",
+    "fastDesc": "Processing queue optimized for quick turnaround."
+  },
+  "howItWorks": {
+    "title": "How it works",
+    "step1": "Upload your file",
+    "step1Desc": "Select an image or video with a watermark.",
+    "step2": "Watermark detected",
+    "step2Desc": "The system identifies the watermark type.",
+    "step3": "Watermark removed",
+    "step3Desc": "Automatic processing cleans your file.",
+    "step4": "Download",
+    "step4Desc": "Get the final output."
+  },
+  "providers": {
+    "title": "AI tool support",
+    "subtitle": "Watermarks from the following tools are supported"
+  },
+  "beforeAfter": {
+    "title": "Before and after",
+    "before": "Before",
+    "after": "After",
+    "subtitle": "Result processed with Pakino"
+  },
+  "pricing": {
+    "title": "Pricing",
+    "subtitle": "Choose the plan that fits you",
+    "monthly": "monthly",
+    "credits": "credits",
+    "mostPopular": "Most popular",
+    "choose": "Choose plan",
+    "current": "Current plan",
+    "perMonth": "per month",
+    "plans": {
+      "free": "Free",
+      "freeDesc": "To get started and try",
+      "mvp": "MVP",
+      "mvpDesc": "Longer videos and priority queue",
+      "proPlus": "Pro+",
+      "proPlusDesc": "More credits and fast queue"
+    }
+  },
+  "result": {
+    "downloadImage": "Download image",
+    "downloadVideo": "Download video",
+    "originalSize": "Original size",
+    "outputSize": "Output size",
+    "processingTime": "Processing time",
+    "detectedWatermark": "Detected watermark",
+    "duration": "Duration",
+    "fileSize": "File size",
+    "status": "Status",
+    "provider": "Provider",
+    "confidence": "Confidence",
+    "location": "Location",
+    "noneDetected": "No supported watermark detected.",
+    "noneDetectedDesc": "Your file has no watermark from supported AI tools. You can try another file."
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "remainingCredits": "Remaining credits",
+    "of": "of",
+    "currentPlan": "Current plan",
+    "totalProcessed": "Files processed",
+    "recentJobs": "Recent jobs",
+    "noJobs": "No files processed yet",
+    "viewAll": "View all",
+    "startProcessing": "Start processing",
+    "history": "History",
+    "colFile": "File",
+    "colType": "Type",
+    "colWatermark": "Watermark",
+    "colStatus": "Status",
+    "colDate": "Date",
+    "colCredits": "Credits",
+    "colActions": "Actions",
+    "typeImage": "Image",
+    "typeVideo": "Video"
+  },
+  "auth": {
+    "loginTitle": "Log in to Pakino",
+    "loginSubtitle": "Access your account",
+    "registerTitle": "Create account",
+    "registerSubtitle": "Get started now",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm password",
+    "loginSubmit": "Log in",
+    "registerSubmit": "Create account",
+    "noAccount": "No account?",
+    "haveAccount": "Have an account?",
+    "createAccount": "Create account",
+    "loginInstead": "Log in",
+    "logout": "Log out",
+    "invalidCreds": "Invalid email or password",
+    "emailExists": "This email is already registered",
+    "loggedOut": "Logged out",
+    "welcomeCredits": "Welcome credits added"
+  },
+  "errors": {
+    "FILE_TOO_LARGE": "File exceeds the size limit",
+    "UNSUPPORTED_FORMAT": "File format not supported",
+    "INVALID_VIDEO": "Invalid video file",
+    "NO_WATERMARK_DETECTED": "No supported watermark detected",
+    "UNSUPPORTED_WATERMARK": "This watermark type is not supported",
+    "PROCESSING_FAILED": "Processing failed",
+    "INSUFFICIENT_CREDITS": "You do not have enough credits",
+    "RATE_LIMITED": "Too many requests. Please slow down.",
+    "STORAGE_ERROR": "File storage error",
+    "WORKER_TIMEOUT": "Processing took too long",
+    "UNAUTHORIZED": "Please log in first",
+    "NOT_FOUND": "Not found",
+    "generic": "An error occurred. Please try again."
+  },
+  "privacy": {
+    "title": "Privacy",
+    "statement": "Your privacy matters to us.",
+    "filesUsed": "Uploaded files are used only for processing.",
+    "autoDelete": "Files are automatically deleted after a set period.",
+    "manualDelete": "You can manually delete your files.",
+    "payment": "Payment information is handled by the payment provider.",
+    "retention": "File retention period: 24 hours for input and output."
+  },
+  "legal": {
+    "responsibleUse": "Responsible use",
+    "responsibleUseNotice": "Pakino is designed to remove watermarks from AI-generated content and assumes you own the content or have permission to modify it. This service is not for bypassing commercial or paid stock licensing.",
+    "terms": "Terms",
+    "privacy": "Privacy"
+  },
+  "faq": {
+    "title": "Frequently asked questions",
+    "items": {
+      "q1": "Which watermark types are supported?",
+      "a1": "Watermarks from AI tools like Hailuo, Veo, Kling, Sora, Seedance, and Dola are supported.",
+      "q2": "What happens to my files after processing?",
+      "a2": "Input and output files are automatically deleted after 24 hours.",
+      "q3": "Do I need to register to use it?",
+      "a3": "Limited free processing is possible without registration, but you need to sign up for history and more credits.",
+      "q4": "Is video supported?",
+      "a4": "Yes, MP4, MOV, and WEBM videos are processed with audio preserved.",
+      "q5": "Does processing work offline?",
+      "a5": "Processing happens on our servers; the app does not process offline."
+    }
+  },
+  "finalCta": {
+    "title": "Get started now",
+    "subtitle": "Process your first file — for free.",
+    "button": "Start free"
+  },
+  "footer": {
+    "product": "Product",
+    "resources": "Resources",
+    "legal": "Legal",
+    "rights": "All rights reserved.",
+    "madeFor": "Built for Persian creators"
+  },
+  "providersList": {
+    "hailuo": "Hailuo",
+    "veo": "Veo",
+    "kling": "Kling",
+    "sora": "Sora",
+    "seedance": "Seedance",
+    "dola": "Dola"
+  }
+}
