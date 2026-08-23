@@ -110,3 +110,10 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Persian typography — unlayered so it overrides the `font-sans` utility.
+   Latin renders from Inter (identical to en pages); Persian glyphs and digits
+   fall through to IRANYekanX (variable, wght 100–1000). */
+html[lang='fa'] body {
+  font-family: var(--font-sans), var(--font-yekan), system-ui, sans-serif;
+}
