@@ -1,4 +1,5 @@
-import { pgTable, text, timestamp, integer, real, uuid, pgEnum } from 'drizzle-orm/pg-core';
+import { pgTable, text, timestamp, integer, real, uuid, pgEnum, uniqueIndex } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 
 export const jobStatusEnum = pgEnum('job_status', [
   'UPLOADING',
@@ -53,6 +54,7 @@ export const jobs = pgTable('jobs', {
   errorMessage: text('error_message'),
   processingBackend: text('processing_backend'),
   creditsUsed: integer('credits_used'),
+  creditsRefunded: integer('credits_refunded').notNull().default(0),
   durationSeconds: real('duration_seconds'),
   inputSize: integer('input_size'),
   outputSize: integer('output_size'),
@@ -61,16 +63,25 @@ export const jobs = pgTable('jobs', {
   completedAt: timestamp('completed_at', { withTimezone: true }),
 });
 
-export const creditTransactions = pgTable('credit_transactions', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  userId: uuid('user_id')
-    .notNull()
-    .references(() => users.id),
-  delta: integer('delta').notNull(),
-  reason: text('reason').notNull(),
-  jobId: uuid('job_id').references(() => jobs.id),
-  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
-});
+export const creditTransactions = pgTable(
+  'credit_transactions',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id),
+    delta: integer('delta').notNull(),
+    reason: text('reason').notNull(),
+    jobId: uuid('job_id').references(() => jobs.id),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => [
+    // One successful job_start deduction and one refund/reconcile row per job.
+    uniqueIndex('credit_transactions_job_reason_uq')
+      .on(t.jobId, t.reason)
+      .where(sql`job_id IS NOT NULL`),
+  ],
+);
 
 export const subscriptions = pgTable('subscriptions', {
   id: uuid('id').primaryKey().defaultRandom(),

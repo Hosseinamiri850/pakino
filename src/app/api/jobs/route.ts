@@ -1,8 +1,8 @@
 import { db, schema } from '@/lib/db/client';
-import { eq, desc } from 'drizzle-orm';
+import { and, eq, desc } from 'drizzle-orm';
 import { getSession } from '@/lib/auth/session';
 import { enqueueExistingJob } from '@/lib/jobs';
-import { estimateCredits, ensureCredits, deductCredits } from '@/lib/credits';
+import { estimateCredits, deductCredits, refundJobRemainingCredits } from '@/lib/credits';
 import { getEnv } from '@/lib/env';
 import { mapJob } from '@/lib/jobs-dto';
 import { AppError } from '@/lib/types';
@@ -20,15 +20,45 @@ export async function POST(req: Request) {
     const [job] = await db.select().from(schema.jobs).where(eq(schema.jobs.id, parsed.data.jobId)).limit(1);
     if (!job || job.userId !== session.userId) throw new AppError('NOT_FOUND', undefined, 404);
 
-    const estimated = estimateCredits(job.type, getEnv().MAX_VIDEO_DURATION);
-    await ensureCredits(session.userId, estimated);
-    await deductCredits(session.userId, estimated, job.id, 'job_start');
+    // Video billing: reserve for the maximum allowed duration up front; the worker
+    // settles to the actual ffprobe duration and refunds the difference (docs/billing.md).
+    const reserved = estimateCredits(job.type, getEnv().MAX_VIDEO_DURATION);
 
-    await db
+    // Claim the job exactly once. Concurrent or retried POSTs lose this guarded
+    // transition and become idempotent no-ops: no second deduction, no duplicate
+    // queue message.
+    const claimed = await db
       .update(schema.jobs)
-      .set({ status: 'ANALYZING', progress: 5, startedAt: new Date(), creditsUsed: estimated })
-      .where(eq(schema.jobs.id, job.id));
-    await enqueueExistingJob(job.id);
+      .set({ status: 'ANALYZING', progress: 5, startedAt: new Date(), creditsUsed: reserved })
+      .where(and(eq(schema.jobs.id, job.id), eq(schema.jobs.status, 'UPLOADING')))
+      .returning({ id: schema.jobs.id });
+    if (claimed.length === 0) return ok({ jobId: job.id });
+
+    try {
+      await deductCredits(session.userId, reserved, job.id, 'job_start');
+    } catch (e) {
+      // Atomic deduction failed (e.g. INSUFFICIENT_CREDITS): release the claim so
+      // the user can retry after topping up. The deduction transaction rolled
+      // back, so nothing was charged and no ledger row exists.
+      await db
+        .update(schema.jobs)
+        .set({ status: 'UPLOADING', progress: 0, startedAt: null, creditsUsed: null })
+        .where(eq(schema.jobs.id, job.id));
+      throw e;
+    }
+
+    try {
+      await enqueueExistingJob(job.id);
+    } catch (e) {
+      // Queue unavailable: refund through the job ledger and fail the job
+      // terminally — it must not sit ANALYZING with paid credits.
+      await refundJobRemainingCredits(job.id, session.userId);
+      await db
+        .update(schema.jobs)
+        .set({ status: 'FAILED', progress: 100, completedAt: new Date(), errorCode: 'QUEUE_UNAVAILABLE' })
+        .where(eq(schema.jobs.id, job.id));
+      throw e;
+    }
 
     return ok({ jobId: job.id });
   } catch (e) {

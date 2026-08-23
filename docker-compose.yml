@@ -5,11 +5,13 @@ services:
       POSTGRES_USER: pakino
       POSTGRES_PASSWORD: pakino
       POSTGRES_DB: pakino
+    # 5433 on the host: a native Windows PostgreSQL can occupy 5432; override
+    # with DATABASE_URL=postgres://pakino:pakino@localhost:5433/pakino
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
-      - ./drizzle/0000_init.sql:/docker-entrypoint-initdb.d/0000_init.sql:ro
+      - ./drizzle:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U pakino"]
       interval: 5s

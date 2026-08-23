@@ -27,10 +27,79 @@ def insert_file(conn, user_id, storage_key: str, original_filename: str, mime_ty
         return cur.fetchone()[0]
 
 
-def refund_credits(conn, user_id: str, amount: int, job_id: str) -> None:
+def refund_job_credits(conn, job_id: str, user_id: str, reason: str = "refund") -> int:
+    """Refund the un-refunded remainder of a job's deducted credits.
+
+    The guarded CTE locks the job row and flips credits_refunded to credits_used
+    in one statement, so retried or concurrent refunds (e.g. a recovery run
+    reprocessing a failure) return 0 the second time and the job's total refund
+    can never exceed its deduction. Caller commits. Returns the refunded amount.
+    """
     with conn.cursor() as cur:
+        cur.execute(
+            """
+            WITH remaining AS (
+                SELECT id, credits_used - credits_refunded AS amount
+                FROM jobs
+                WHERE id = %s
+                  AND credits_used IS NOT NULL
+                  AND credits_refunded < credits_used
+                FOR UPDATE
+            )
+            UPDATE jobs SET credits_refunded = jobs.credits_used
+            FROM remaining
+            WHERE jobs.id = remaining.id
+            RETURNING remaining.amount
+            """,
+            (job_id,),
+        )
+        row = cur.fetchone()
+        if not row:
+            return 0
+        amount = row[0]
         cur.execute("UPDATE users SET credits = credits + %s WHERE id = %s", (amount, user_id))
         cur.execute(
             "INSERT INTO credit_transactions (user_id, delta, reason, job_id) VALUES (%s, %s, %s, %s)",
-            (user_id, amount, "refund", job_id),
+            (user_id, amount, reason, job_id),
         )
+        return amount
+
+
+def reconcile_job_credits(conn, job_id: str, user_id: str, actual_cost: int, reason: str = "reconcile") -> int:
+    """Video billing settlement: credits_used currently holds the max-duration
+    reservation; settle it to the actual ffprobe-based cost and refund the
+    difference through the same refund ledger. No-op when already settled or
+    when a refund has already gone below the actual cost. Caller commits.
+    Returns the refunded difference.
+    """
+    with conn.cursor() as cur:
+        cur.execute(
+            """
+            WITH target AS (
+                SELECT id, credits_used, credits_refunded
+                FROM jobs
+                WHERE id = %s
+                  AND credits_used IS NOT NULL
+                  AND credits_used > %s
+                  AND credits_refunded <= %s
+                FOR UPDATE
+            )
+            UPDATE jobs j
+               SET credits_refunded = t.credits_refunded + (t.credits_used - %s),
+                   credits_used = %s
+              FROM target t
+             WHERE j.id = t.id
+            RETURNING t.credits_used - %s
+            """,
+            (job_id, actual_cost, actual_cost, actual_cost, actual_cost, actual_cost),
+        )
+        row = cur.fetchone()
+        if not row:
+            return 0
+        amount = row[0]
+        cur.execute("UPDATE users SET credits = credits + %s WHERE id = %s", (amount, user_id))
+        cur.execute(
+            "INSERT INTO credit_transactions (user_id, delta, reason, job_id) VALUES (%s, %s, %s, %s)",
+            (user_id, amount, reason, job_id),
+        )
+        return amount

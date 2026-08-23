@@ -9,6 +9,11 @@ from .models import SUPPORTED_VIDEO_PROVIDERS
 log = logging.getLogger("pakino.video")
 
 
+def probe_duration(input_path: str) -> float:
+    """Actual duration via ffprobe — used for billing settlement before processing."""
+    return ffmpeg.duration_seconds(input_path)
+
+
 def process_video(input_path: str, output_path: str, max_duration: int) -> dict:
     """Detect + remove visible watermark on a video, preserving audio."""
     duration = ffmpeg.duration_seconds(input_path)

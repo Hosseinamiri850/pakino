@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import argparse
 import logging
+import math
 import os
 import signal
 import sys
@@ -18,7 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 from worker.app.config import load_settings
 from worker.app.queue import make_redis, brpop_job, is_cancelled
 from worker.app.storage import make_s3_client, download_to_file, upload_file
-from worker.app.db import connect, update_job, insert_file, refund_credits
+from worker.app.db import connect, update_job, insert_file, refund_job_credits, reconcile_job_credits
 from worker.app.models import JobMessage
 from worker.app import image as image_proc
 from worker.app import video as video_proc
@@ -56,9 +57,24 @@ def process_one(msg: JobMessage, settings) -> None:
             download_to_file(s3, settings.s3_bucket, msg.input_key, input_path)
 
             if is_cancelled(make_redis(settings), msg.job_id):
+                # Policy: cancellation refunds the un-refunded remainder.
+                refund_job_credits(conn, msg.job_id, msg.user_id)
                 update_job(conn, msg.job_id, status="CANCELLED", progress=0)
                 conn.commit()
                 return
+
+            if msg.type == "video" and msg.user_id:
+                # Video billing settlement: the API reserved credits for
+                # MAX_VIDEO_DURATION; settle to the actual ffprobe duration and
+                # refund the difference now (docs/billing.md). Unknown duration
+                # (<= 0) keeps the reservation until the failure refund settles it.
+                duration = video_proc.probe_duration(input_path)
+                if duration > 0:
+                    actual = math.ceil(duration / 10) * settings.credits_per_video_10s
+                    refunded = reconcile_job_credits(conn, msg.job_id, msg.user_id, actual)
+                    if refunded:
+                        log.info("job %s settled to %d credits, refunded %d", msg.job_id, actual, refunded)
+                    conn.commit()
 
             update_job(conn, msg.job_id, status="DETECTING", progress=25)
             conn.commit()
@@ -77,6 +93,9 @@ def process_one(msg: JobMessage, settings) -> None:
                 result = video_proc.process_video(input_path, output_path, settings.max_video_duration)
 
             if result.get("no_watermark"):
+                # Policy: no output was produced, so the user pays nothing —
+                # refund the un-refunded remainder.
+                refund_job_credits(conn, msg.job_id, msg.user_id)
                 update_job(
                     conn, msg.job_id,
                     status="COMPLETED", progress=100, completed_at=_now(),
@@ -119,9 +138,15 @@ def process_one(msg: JobMessage, settings) -> None:
         conn.commit()
         if msg.user_id:
             try:
-                refund_credits(conn, msg.user_id, settings.credits_per_image, msg.job_id)
+                # Refund the un-refunded remainder of what was actually deducted
+                # (jobs.credits_used); exactly-once via the refund ledger even if
+                # a recovery run reprocesses this failure.
+                refunded = refund_job_credits(conn, msg.job_id, msg.user_id)
                 conn.commit()
+                if refunded:
+                    log.info("job %s refunded %d credits after failure", msg.job_id, refunded)
             except Exception:
+                conn.rollback()
                 log.exception("refund failed")
     finally:
         conn.close()
