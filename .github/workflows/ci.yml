@@ -43,4 +43,10 @@ jobs:
 
       - run: pip install -r worker/requirements.txt pytest
 
+      - name: Install FFmpeg
+        uses: awalsh128/cache-apt-pkgs-action@v1
+        with:
+          packages: ffmpeg
+          version: 1.0
+
       - run: python -m pytest worker/tests -q
