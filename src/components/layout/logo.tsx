@@ -14,8 +14,8 @@ export function Logo({ className }: { className?: string }) {
         />
         <defs>
           <linearGradient id="pk-grad" x1="0" y1="0" x2="28" y2="28" gradientUnits="userSpaceOnUse">
-            <stop stopColor="hsl(22 90% 55%)" />
-            <stop offset="1" stopColor="hsl(14 85% 50%)" />
+            <stop stopColor="hsl(217 91% 60%)" />
+            <stop offset="1" stopColor="hsl(225 76% 48%)" />
           </linearGradient>
         </defs>
       </svg>

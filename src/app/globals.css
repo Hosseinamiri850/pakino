@@ -11,7 +11,7 @@
     --card-foreground: 0 0% 3.9%;
     --popover: 0 0% 100%;
     --popover-foreground: 0 0% 3.9%;
-    --primary: 24 95% 53%;
+    --primary: 221 83% 53%;
     --primary-foreground: 0 0% 100%;
     --secondary: 0 0% 96.1%;
     --secondary-foreground: 0 0% 9%;
@@ -23,7 +23,7 @@
     --destructive-foreground: 0 0% 100%;
     --border: 0 0% 89.8%;
     --input: 0 0% 89.8%;
-    --ring: 24 95% 53%;
+    --ring: 221 83% 53%;
     --radius: 0.75rem;
   }
 
@@ -35,7 +35,7 @@
     --card-foreground: 0 0% 98%;
     --popover: 0 0% 6.5%;
     --popover-foreground: 0 0% 98%;
-    --primary: 22 90% 55%;
+    --primary: 221 83% 53%;
     --primary-foreground: 0 0% 100%;
     --secondary: 0 0% 12%;
     --secondary-foreground: 0 0% 98%;
@@ -47,7 +47,7 @@
     --destructive-foreground: 0 0% 98%;
     --border: 0 0% 14%;
     --input: 0 0% 14%;
-    --ring: 22 90% 55%;
+    --ring: 221 83% 53%;
   }
 }
 
@@ -112,8 +112,8 @@
 }
 
 /* Persian typography — unlayered so it overrides the `font-sans` utility.
-   Latin renders from Inter (identical to en pages); Persian glyphs and digits
-   fall through to IRANYekanX (variable, wght 100–1000). */
+   IRANYekanX is primary on fa pages so Persian glyphs/digits always render in
+   it; Latin text falls through to Inter (identical to en pages). */
 html[lang='fa'] body {
-  font-family: var(--font-sans), var(--font-yekan), system-ui, sans-serif;
+  font-family: var(--font-yekan), var(--font-sans), system-ui, sans-serif;
 }
