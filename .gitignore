@@ -34,6 +34,9 @@ npm-debug.log*
 # drizzle
 drizzle/meta/
 
+# knowledge graph (regenerate with: npm run graph:update)
+graphify-out/
+
 # temp media
 tmp/
 uploads/
