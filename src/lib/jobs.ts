@@ -48,3 +48,32 @@ export async function enqueueExistingJob(jobId: string): Promise<void> {
   };
   await enqueueJob(msg);
 }
+
+/**
+ * Push every pending outbox row to Redis and mark it sent. Called after the
+ * immediate enqueue attempt and periodically by the worker loop, so a crash
+ * between the DB commit and the RPUSH is healed by whichever process runs next
+ * (at-least-once delivery; worker-side DB claim makes duplicates harmless).
+ * Returns the number of messages pushed.
+ */
+export async function dispatchPendingOutbox(): Promise<number> {
+  const pending = await db
+    .select({ id: schema.jobOutbox.id, jobId: schema.jobOutbox.jobId })
+    .from(schema.jobOutbox)
+    .where(eq(schema.jobOutbox.status, 'pending'));
+  let pushed = 0;
+  for (const row of pending) {
+    try {
+      await enqueueExistingJob(row.jobId);
+      await db
+        .update(schema.jobOutbox)
+        .set({ status: 'sent', sentAt: new Date() })
+        .where(eq(schema.jobOutbox.id, row.id));
+      await db.update(schema.jobs).set({ queuedAt: new Date() }).where(eq(schema.jobs.id, row.jobId));
+      pushed += 1;
+    } catch (e) {
+      console.error(`outbox dispatch failed job_id=${row.jobId}`, e instanceof Error ? e.message : e);
+    }
+  }
+  return pushed;
+}

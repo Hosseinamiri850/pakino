@@ -1,0 +1,27 @@
+# Pakino Next.js production image (multi-stage).
+FROM node:20-alpine AS deps
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN --mount=type=cache,target=/root/.npm npm ci --ignore-scripts
+
+FROM node:20-alpine AS build
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+ENV NEXT_TELEMETRY_DISABLED=1
+RUN --mount=type=cache,target=/app/.next-cache npm run build
+
+FROM node:20-alpine AS runtime
+WORKDIR /app
+ENV NODE_ENV=production \
+    NEXT_TELEMETRY_DISABLED=1 \
+    PORT=3000
+RUN addgroup -S pakino && adduser -S pakino -G pakino
+COPY --from=build /app/package.json ./package.json
+COPY --from=deps /app/node_modules ./node_modules
+COPY --from=build /app/.next ./.next
+COPY --from=build /app/next.config.mjs ./next.config.mjs
+COPY --from=build /app/drizzle ./drizzle
+USER pakino
+EXPOSE 3000
+CMD ["npm", "run", "start"]

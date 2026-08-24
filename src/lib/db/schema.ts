@@ -55,12 +55,26 @@ export const jobs = pgTable('jobs', {
   processingBackend: text('processing_backend'),
   creditsUsed: integer('credits_used'),
   creditsRefunded: integer('credits_refunded').notNull().default(0),
+  queuedAt: timestamp('queued_at', { withTimezone: true }),
+  heartbeatAt: timestamp('heartbeat_at', { withTimezone: true }),
+  attemptCount: integer('attempt_count').notNull().default(0),
+  lastErrorCode: text('last_error_code'),
   durationSeconds: real('duration_seconds'),
   inputSize: integer('input_size'),
   outputSize: integer('output_size'),
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   startedAt: timestamp('started_at', { withTimezone: true }),
   completedAt: timestamp('completed_at', { withTimezone: true }),
+});
+
+export const jobOutbox = pgTable('job_outbox', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  jobId: uuid('job_id')
+    .notNull()
+    .references(() => jobs.id),
+  status: text('status').notNull().default('pending'),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  sentAt: timestamp('sent_at', { withTimezone: true }),
 });
 
 export const creditTransactions = pgTable(

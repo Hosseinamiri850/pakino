@@ -31,6 +31,8 @@ class Settings:
     credits_per_video_10s: int
     worker_concurrency: int
     processing_backend: str
+    max_job_attempts: int
+    recovery_interval_seconds: int
 
     @property
     def storage_opts(self) -> dict:
@@ -60,4 +62,6 @@ def load_settings() -> Settings:
         credits_per_video_10s=_int("CREDITS_PER_VIDEO_10_SECONDS", 10),
         worker_concurrency=_int("WORKER_CONCURRENCY", 2),
         processing_backend=_env("PROCESSING_BACKEND", "opencv"),
+        max_job_attempts=_int("MAX_JOB_ATTEMPTS", 3),
+        recovery_interval_seconds=_int("RECOVERY_INTERVAL_SECONDS", 60),
     )
