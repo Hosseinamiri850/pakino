@@ -2,7 +2,7 @@ import { db, schema } from '@/lib/db/client';
 import { and, eq, desc } from 'drizzle-orm';
 import { getSession } from '@/lib/auth/session';
 import { enqueueExistingJob } from '@/lib/jobs';
-import { estimateCredits, deductCredits, refundJobRemainingCredits } from '@/lib/credits';
+import { estimateCredits, deductCredits } from '@/lib/credits';
 import { getEnv } from '@/lib/env';
 import { mapJob } from '@/lib/jobs-dto';
 import { AppError } from '@/lib/types';
@@ -27,11 +27,20 @@ export async function POST(req: Request) {
     // Claim the job exactly once. Concurrent or retried POSTs lose this guarded
     // transition and become idempotent no-ops: no second deduction, no duplicate
     // queue message.
-    const claimed = await db
-      .update(schema.jobs)
-      .set({ status: 'ANALYZING', progress: 5, startedAt: new Date(), creditsUsed: reserved })
-      .where(and(eq(schema.jobs.id, job.id), eq(schema.jobs.status, 'UPLOADING')))
-      .returning({ id: schema.jobs.id });
+    const claimed = await db.transaction(async (tx) => {
+      const rows = await tx
+        .update(schema.jobs)
+        .set({ status: 'ANALYZING', progress: 5, startedAt: new Date(), creditsUsed: reserved })
+        .where(and(eq(schema.jobs.id, job.id), eq(schema.jobs.status, 'UPLOADING')))
+        .returning({ id: schema.jobs.id });
+      if (rows.length === 0) return [];
+      // Transactional outbox row commits atomically with the claim + deduction:
+      // a crash before the Redis RPUSH leaves a durable pending record that the
+      // dispatcher (API or worker loop) re-pushes later. heartbeat_at stays NULL
+      // so the worker's claim UPDATE can win exactly once.
+      await tx.insert(schema.jobOutbox).values({ jobId: job.id });
+      return rows;
+    });
     if (claimed.length === 0) return ok({ jobId: job.id });
 
     try {
@@ -39,7 +48,13 @@ export async function POST(req: Request) {
     } catch (e) {
       // Atomic deduction failed (e.g. INSUFFICIENT_CREDITS): release the claim so
       // the user can retry after topping up. The deduction transaction rolled
-      // back, so nothing was charged and no ledger row exists.
+      // back, so nothing was charged and no ledger row exists. The outbox row
+      // from the claim above did commit — retire it so no dispatcher ever pushes
+      // an unpaid job.
+      await db
+        .update(schema.jobOutbox)
+        .set({ status: 'dead', sentAt: new Date() })
+        .where(and(eq(schema.jobOutbox.jobId, job.id), eq(schema.jobOutbox.status, 'pending')));
       await db
         .update(schema.jobs)
         .set({ status: 'UPLOADING', progress: 0, startedAt: null, creditsUsed: null })
@@ -49,15 +64,19 @@ export async function POST(req: Request) {
 
     try {
       await enqueueExistingJob(job.id);
-    } catch (e) {
-      // Queue unavailable: refund through the job ledger and fail the job
-      // terminally — it must not sit ANALYZING with paid credits.
-      await refundJobRemainingCredits(job.id, session.userId);
+      // Mark the immediate push done; any crash up to this point is healed by
+      // dispatchPendingOutbox (worker loop runs it every idle cycle).
       await db
-        .update(schema.jobs)
-        .set({ status: 'FAILED', progress: 100, completedAt: new Date(), errorCode: 'QUEUE_UNAVAILABLE' })
-        .where(eq(schema.jobs.id, job.id));
-      throw e;
+        .update(schema.jobOutbox)
+        .set({ status: 'sent', sentAt: new Date() })
+        .where(and(eq(schema.jobOutbox.jobId, job.id), eq(schema.jobOutbox.status, 'pending')));
+      await db.update(schema.jobs).set({ queuedAt: new Date() }).where(eq(schema.jobs.id, job.id));
+    } catch (e) {
+      // Queue unavailable right now: keep the outbox row pending so the worker's
+      // periodic dispatcher re-pushes when Redis recovers. Do NOT refund/fail —
+      // the durable record makes this recoverable instead of terminal.
+      console.error(`enqueue failed; outbox will retry job_id=${job.id}`, e instanceof Error ? e.message : e);
+      return ok({ jobId: job.id });
     }
 
     return ok({ jobId: job.id });

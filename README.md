@@ -43,8 +43,10 @@ Spin up Postgres + Redis + MinIO:
 docker compose up -d
 ```
 
-This also runs `drizzle/0000_init.sql` against Postgres on first boot, and creates the
-`pakino` bucket in MinIO.
+This also runs everything in `drizzle/` against Postgres on first boot (init +
+migrations), and creates the `pakino` bucket in MinIO. Note: the compose
+Postgres maps to **host port 5433** (`localhost:5433`) — a native Windows
+PostgreSQL commonly owns 5432. Containers inside compose use `postgres:5432`.
 
 Without Docker: install PostgreSQL 16, Redis 7, MinIO locally and run:
 
@@ -93,8 +95,29 @@ Worker tests:
 
 ```bash
 pip install pytest
+DATABASE_URL=postgres://pakino:pakino@localhost:5433/pakino \
+REDIS_URL=redis://localhost:6379/1 \
 python -m pytest worker/tests -q
 ```
+
+Integration suites (credit ledger + job reliability) run against real
+PostgreSQL/Redis when reachable and skip otherwise.
+
+## Production (Docker)
+
+Full stack — Next.js, worker, Redis, Postgres, MinIO:
+
+```bash
+SESSION_SECRET=$(openssl rand -hex 32) \
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+
+docker compose ps
+docker compose logs -f worker
+docker compose down
+```
+
+Never use `npm run dev` in production. See docs/JOB_RELIABILITY_REPORT.md for
+the reliability model and operational notes.
 
 ## Configuration
 
