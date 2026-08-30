@@ -30,6 +30,7 @@ from worker.app.storage import make_s3_client, download_to_file, upload_file
 from worker.app.db import connect, update_job, insert_file, refund_job_credits, reconcile_job_credits
 from worker.app.models import JobMessage
 from worker.app import reliability
+from worker.app.retention import retention_pass
 from worker.app import image as image_proc
 from worker.app import video as video_proc
 
@@ -322,6 +323,7 @@ def main() -> int:
             except Exception:
                 log.exception("outbox dispatch pass failed")
             recovery_pass(r, settings)
+            retention_pass(settings)
 
         job = brpop_job(r, settings.queue_name, timeout=5)
         if job is None:
